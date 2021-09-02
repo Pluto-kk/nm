@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/nn.h
+errno.h
+-
+stddef.h
+-
+stdint.h
+-
+
+../include/reqrep.h
+nn.h
+../include/nn.h
+
+/home/k/ipc/as-nm/src/main.c
+nm.h
+/home/k/ipc/as-nm/src/nm.h
+
+/home/k/ipc/as-nm/src/nm.c
+nm.h
+/home/k/ipc/as-nm/src/nm.h
+nn.h
+/home/k/ipc/as-nm/src/nn.h
+reqrep.h
+/home/k/ipc/as-nm/src/reqrep.h
+
+/home/k/ipc/as-nm/src/nm.h
+

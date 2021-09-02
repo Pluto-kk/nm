@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/k/ipc/as-nm/build",
+  "command": "/bin/x86_64-linux-gnu-gcc-9  -I/home/k/ipc/as-nm/./src -I/home/k/ipc/as-nm/./include  -g   -o CMakeFiles/as_nm_test.dir/src/main.c.o   -c /home/k/ipc/as-nm/src/main.c",
+  "file": "/home/k/ipc/as-nm/src/main.c"
+},
+{
+  "directory": "/home/k/ipc/as-nm/build",
+  "command": "/bin/x86_64-linux-gnu-gcc-9  -I/home/k/ipc/as-nm/./src -I/home/k/ipc/as-nm/./include  -g   -o CMakeFiles/as_nm_test.dir/src/nm.c.o   -c /home/k/ipc/as-nm/src/nm.c",
+  "file": "/home/k/ipc/as-nm/src/nm.c"
+}
+]
