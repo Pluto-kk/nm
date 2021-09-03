@@ -4,8 +4,8 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/home/k/ipc/as-nm/src/main.c" "/home/k/ipc/as-nm/build/CMakeFiles/as_nm_test.dir/src/main.c.o"
-  "/home/k/ipc/as-nm/src/nm.c" "/home/k/ipc/as-nm/build/CMakeFiles/as_nm_test.dir/src/nm.c.o"
+  "/home/xin.deng/work/ipc/nm/src/main.c" "/home/xin.deng/work/ipc/nm/build/CMakeFiles/as_nm_test.dir/src/main.c.o"
+  "/home/xin.deng/work/ipc/nm/src/nm.c" "/home/xin.deng/work/ipc/nm/build/CMakeFiles/as_nm_test.dir/src/nm.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 

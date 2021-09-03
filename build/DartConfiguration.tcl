@@ -4,17 +4,17 @@
 
 
 # Configuration directories and files
-SourceDirectory: /home/k/ipc/as-nm
-BuildDirectory: /home/k/ipc/as-nm/build
+SourceDirectory: /home/xin.deng/work/ipc/nm
+BuildDirectory: /home/xin.deng/work/ipc/nm/build
 
 # Where to place the cost data store
 CostDataFile: 
 
 # Site is something like machine.domain, i.e. pragmatic.crd
-Site: k-virtual-machine
+Site: AW-S001
 
 # Build name is osname-revision-compiler, i.e. Linux-2.4.2-2smp-c++
-BuildName: Linux-x86_64-linux-gnu-g++-9
+BuildName: Linux-c++
 
 # Subprojects
 LabelsForSubprojects: 
@@ -26,8 +26,8 @@ SubmitURL: http://
 NightlyStartTime: 00:00:00 EDT
 
 # Commands for the build/test/submit cycle
-ConfigureCommand: "/usr/bin/cmake" "/home/k/ipc/as-nm"
-MakeCommand: /usr/bin/cmake --build . --config "${CTEST_CONFIGURATION_TYPE}" -- -i
+ConfigureCommand: "/opt/cmake-3.19.1-Linux-x86_64/bin/cmake" "/home/xin.deng/work/ipc/nm"
+MakeCommand: /opt/cmake-3.19.1-Linux-x86_64/bin/cmake --build . --config "${CTEST_CONFIGURATION_TYPE}" -- -i
 DefaultCTestConfigurationType: Release
 
 # version control
@@ -35,7 +35,7 @@ UpdateVersionOnly:
 
 # CVS options
 # Default is "-d -P -A"
-CVSCommand: CVSCOMMAND-NOTFOUND
+CVSCommand: /usr/bin/cvs
 CVSUpdateOptions: -d -A -P
 
 # Subversion options
@@ -57,18 +57,22 @@ P4UpdateOptions:
 P4UpdateCustom: 
 
 # Generic update command
-UpdateCommand: 
+UpdateCommand: /usr/bin/git
 UpdateOptions: 
-UpdateType: 
+UpdateType: git
 
 # Compiler info
-Compiler: /bin/x86_64-linux-gnu-g++-9
-CompilerVersion: 9.3.0
+Compiler: /usr/bin/c++
+CompilerVersion: 5.4.0
 
 # Dynamic analysis (MemCheck)
 PurifyCommand: 
 ValgrindCommand: 
 ValgrindCommandOptions: 
+DrMemoryCommand: 
+DrMemoryCommandOptions: 
+CudaSanitizerCommand: 
+CudaSanitizerCommandOptions: 
 MemoryCheckType: 
 MemoryCheckSanitizerOptions: 
 MemoryCheckCommand: MEMORYCHECK_COMMAND-NOTFOUND

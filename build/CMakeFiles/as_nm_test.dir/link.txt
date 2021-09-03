@@ -1,1 +1,1 @@
-/bin/x86_64-linux-gnu-gcc-9 -g  -rdynamic CMakeFiles/as_nm_test.dir/src/main.c.o CMakeFiles/as_nm_test.dir/src/nm.c.o  -o as_nm_test   -L/home/k/ipc/as-nm/./lib  -Wl,-rpath,/home/k/ipc/as-nm/./lib -lnanomsg 
+/usr/bin/cc -pthread -lresolv -lnsl -rdynamic CMakeFiles/as_nm_test.dir/src/main.c.o CMakeFiles/as_nm_test.dir/src/nm.c.o -o as_nm_test   -L/home/xin.deng/work/ipc/nm/./lib  -Wl,-rpath,/home/xin.deng/work/ipc/nm/./lib -lnanomsg 
