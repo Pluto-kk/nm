@@ -1,1 +1,0 @@
-/usr/bin/cc -pthread -lresolv -lnsl -rdynamic CMakeFiles/as_nm_test.dir/src/main.c.o CMakeFiles/as_nm_test.dir/src/nm.c.o -o as_nm_test   -L/home/xin.deng/work/ipc/nm/./lib  -Wl,-rpath,/home/xin.deng/work/ipc/nm/./lib -lnanomsg 
