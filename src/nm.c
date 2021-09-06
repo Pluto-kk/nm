@@ -166,7 +166,7 @@ int rep_close(void *rep)
 
 int nm_req_conn(char *s)
 {
-    int fd = nn_socket(AF_SP_RAW, NN_REP);
+    int fd = nn_socket(AF_SP, NN_REP);
     if (fd == -1)
     {
         printf("nn_socket error:%s\n", nn_strerror(errno));
@@ -180,4 +180,26 @@ int nm_req_conn(char *s)
     }
 
     return fd;
+}
+
+int nm_req_close(int req)
+{
+    return nn_close(req);
+}
+
+int nm_req_send(int req, int to, char *in, int isize, char *out, int *osize)
+{
+    int ret = nn_send(req, out, osize, 0);
+    if(ret != osize){
+        printf("want send:%d buf send:%d\n", osize, ret);
+        return -1;
+    }
+
+    ret = nn_recv(req, in, isize, 0);
+    if(ret < 0){
+        printf("recv error:%s\n", nn_strerror(errno));
+        return -1;
+    }
+
+    return ret;
 }

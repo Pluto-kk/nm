@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #define test "tcp://127.0.0.1:9999"
 
 int handle(char *in, int isize, char *out, int *osize, int err){
@@ -14,7 +15,16 @@ int handle(char *in, int isize, char *out, int *osize, int err){
 
 int main()
 {
-    nm_rep_listen(test, 1, 1024, handle);
-    while(1) sleep(1);
+    //nm_rep_listen(test, 1, 1024, handle);
+    int fd = nm_req_conn(test);
+    if(fd == -1){
+        return 0;
+    }
+
+
+    while(1) {
+        //nm_req_send(fd, );
+        sleep(2);
+    }
     return 0;
 }
