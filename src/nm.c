@@ -19,12 +19,12 @@ typedef struct rep_handle
 
 void *rep_worker(void *arg)
 {
-    REP_HANDLE* rep_obj = (REP_HANDLE*)arg;
+    REP_HANDLE *rep_obj = (REP_HANDLE *)arg;
     int (*handle)(char *in, int isize, char *out, int *osize, int err) = rep_obj->handle;
 
     /*  Main processing loop. */
-    char* out_buf = (char*)nn_allocmsg(rep_obj->out_size, 0);
-    void* recv_buf = nn_allocmsg(rep_obj->out_size, 0);
+    char *out_buf = (char *)nn_allocmsg(rep_obj->out_size, 0);
+    void *recv_buf = nn_allocmsg(rep_obj->out_size, 0);
     int out_size = 0;
     for (;;)
     {
@@ -73,10 +73,11 @@ void *rep_worker(void *arg)
         hdr.msg_iovlen = 1;
         hdr.msg_control = NULL;
         hdr.msg_controllen = NN_MSG;
-        rc = nn_sendmsg (rep_obj->fd, &hdr, 0);
-        if (rc < 0) {
-            fprintf (stderr, "nn_send: %s\n", nn_strerror (nn_errno ()));
-            nn_freemsg (control);
+        rc = nn_sendmsg(rep_obj->fd, &hdr, 0);
+        if (rc < 0)
+        {
+            fprintf(stderr, "nn_send: %s\n", nn_strerror(nn_errno()));
+            nn_freemsg(control);
         }
     }
 
@@ -84,7 +85,6 @@ void *rep_worker(void *arg)
         to shut down too. */
     nn_freemsg(out_buf);
     nn_freemsg(recv_buf);
-    nn_close(rep_obj->fd);
     return (NULL);
 }
 
@@ -115,27 +115,69 @@ void *nm_rep_listen(char *addr, int worker_num, int out_size, int (*recv)(char *
     }
 
     REP_HANDLE *rep_obj = (REP_HANDLE *)malloc(sizeof(REP_HANDLE));
-    memset(rep_obj, 0, sizeof(REP_HANDLE));    
+    memset(rep_obj, 0, sizeof(REP_HANDLE));
     rep_obj->fd = fd;
-    rep_obj->worker_num = worker_num; 
+    rep_obj->worker_num = worker_num;
     rep_obj->pids = (pthread_t *)malloc(sizeof(pthread_t) * worker_num);
     memset(rep_obj->pids, 0, sizeof(pthread_t) * worker_num);
     rep_obj->handle = recv;
 
     /*  Start up the threads. */
-    for (int i= 0; i < worker_num; i++)
+    for (int i = 0; i < worker_num; i++)
     {
-        int rc = pthread_create(rep_obj->pids+i, NULL, rep_worker, (void *)rep_obj);
-        if (rc < 0)
+        int rc = pthread_create(rep_obj->pids + i, NULL, rep_worker, (void *)rep_obj);
+        if (rc >= 0)
         {
+            printf("pthread create %d success\n", i);
+            
+        }
+        else{
             fprintf(stderr, "pthread_create: %s\n", strerror(rc));
+            nn_close(fd);
             free(rep_obj->pids);
             free(rep_obj);
             rep_obj = NULL;
-            nn_close(fd);
             break;
         }
     }
 
     return rep_obj;
+}
+
+int rep_close(void *rep)
+{
+    REP_HANDLE *rep_obj = (REP_HANDLE *)rep;
+    if(nn_close(rep_obj->fd) == 0){
+        printf("close rep fd\n");
+    }
+    else{
+        printf("close rep fail:%s\n", nn_strerror(errno));
+    }
+
+    for(int i=0; i<rep_obj->worker_num; i++){
+        pthread_join(rep_obj->pids[i], NULL);
+        printf("pthread_join %d\n", i);
+    }
+
+    free(rep_obj->pids);
+    free(rep_obj);
+    return 0;
+}
+
+int nm_req_conn(char *s)
+{
+    int fd = nn_socket(AF_SP_RAW, NN_REP);
+    if (fd == -1)
+    {
+        printf("nn_socket error:%s\n", nn_strerror(errno));
+        return -1;
+    }
+
+    if(nn_connect(fd, s) < 0){
+        printf("nn connect %s fail\n", s);
+        nn_close(fd);
+        return -1;
+    }
+
+    return fd;
 }

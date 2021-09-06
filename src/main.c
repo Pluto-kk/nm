@@ -5,7 +5,6 @@
 #define test "tcp://127.0.0.1:9999"
 
 int handle(char *in, int isize, char *out, int *osize, int err){
-    //*(in+isize) = '\0';
     printf("recv:%s\n", in);
     memcpy(osize, "recv:", 5);
     memcpy(osize+5, in, isize);
