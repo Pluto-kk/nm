@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "nm.h"
 
@@ -16,7 +17,7 @@ typedef struct MSG_MAP
 }MSG_MAP;
 
 MSG_MAP g_msg_map[] = {
-    {MSG_CODEC_SET_CONFIG, URL_TEST, sizeof(test_cfg), sizeof(test_cfg), 1000},
+    {MSG_CODEC_SET_CONFIG, URL_TEST, sizeof(test_cfg), sizeof(test_cfg), 2000},
 };
 
 #define MSG_NUM (sizeof(g_msg_map) / sizeof(MSG_MAP))
@@ -91,7 +92,7 @@ typedef struct MSG_DATA{
     int msg_id;
     size_t time;
 
-    void* data;
+    char data[0];
 }MSG_DATA;
 
 int msg_sendto(int msg_id, char *input, char *output)
@@ -104,8 +105,10 @@ int msg_sendto(int msg_id, char *input, char *output)
         int size = msg->output_data_size;
         /*MSG_DATA* send_buf = (MSG_DATA*)malloc(sizeof(MSG_DATA)+msg->input_data_size);
         memcpy(send_buf->data, input,  msg->input_data_size);
-        send_buf->*/
-        ret = nm_req_sendto(msg->url, msg->timeout, input, msg->input_data_size, output, &size, &msg_id, sizeof(int));
+        send_buf->msg_id = msg_id;
+        send_buf->msg_id = 0;*/
+        ret = nm_req_sendto(msg->url, msg->timeout, input, msg->input_data_size, output, &size, 4);
+        //ret = nm_req_sendto(msg->url, msg->timeout, input, msg->input_data_size, output, &size, msg_id);
         //free(send_buf);
     }
     else

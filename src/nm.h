@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#define HAVE_MSGHDR_MSG_CONTROL
+
 //req/rep;
 #define NM_REP_MAX_WORKERS (21)
 #define NM_REP_OSIZE_MIN   (4*1024)
@@ -17,7 +19,7 @@ int nm_req_conn(char *addr);
 int nm_req_close(int req);
 int nm_req_send(int req, int timeout, char *send_buf, int send_size, char *recv_buf, int *recv_size);
 int nm_req_recv(int req, char *recv_buf, int *recv_size, int timeout);
-int nm_req_sendto(char *addr, int timeout, char *send_buf, int send_size, char *recv_buf, int *recv_size, char* control, int control_len);
+int nm_req_sendto(char *addr, int timeout, char *send_buf, int send_size, char *recv_buf, int *recv_size, int msg_id);
 
 //push/pull;
 
