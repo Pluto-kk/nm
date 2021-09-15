@@ -10,7 +10,7 @@
 
 void test_rep()
 {
-    msg_listen(URL_TEST, 2);   
+    msg_listen(URL_TEST, 1);   
     while(1){
         sleep(5000);
     }

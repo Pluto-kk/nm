@@ -55,7 +55,7 @@ void *rep_worker(void *arg)
 
         iov.iov_base = &recv_buf;
         iov.iov_len = NN_MSG;
-
+        
         int rc = nn_recvmsg(fd, &hdr, 0);
         if (rc < 0)
         {
@@ -71,22 +71,20 @@ void *rep_worker(void *arg)
             /*  Any error here is unexpected. */
             break;
         }
-
+        printf("recv rc:%d %d\n", rc, nn_errno());
         int send_size = 0;
         char *send_buf = NULL;
-
+        
         handle(recv_buf, &send_buf, &send_size);
         nn_freemsg(recv_buf);
 
-        //hdr.msg_iov->iov_base = send_buf;
-        //hdr.msg_iov->iov_len = send_size;
-        iov.iov_base = send_buf;
-        iov.iov_len = send_size;
-        hdr.msg_iov = NULL;
-        hdr.msg_iovlen = 0;
-
+        hdr.msg_iov->iov_base = send_buf;
+        hdr.msg_iov->iov_len = send_size;
+        hdr.msg_control = NULL;
+        hdr.msg_controllen = 0;
+        
         rc = nn_sendmsg(fd, &hdr, 0);
-        if (rc <= 0)
+        if (rc < 0)
         {
             fprintf(stderr, "nn_send: %s\n", nn_strerror(nn_errno()));
             //nn_freemsg (control);
@@ -181,7 +179,7 @@ int nm_rep_close(void *obj)
 int nm_req_conn(char *s)
 {
     int fd = nn_socket(AF_SP, NN_REQ);
-    if (fd == -1)
+    if (fd < 0)
     {
         fprintf(stderr, "nn_socket error:%s\n", nn_strerror(errno));
         return -1;
@@ -211,12 +209,12 @@ int nm_req_send(int req, int timeout, char *send_buf, int send_size, char *recv_
         return -1;
     }
 
-    /*ret = nn_setsockopt(req, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int));
+    ret = nn_setsockopt(req, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int));
     if (ret < 0)
     {
         fprintf(stderr, "nn_setsockopt fail: %s\n", nn_strerror(errno));
         return -1;
-    }*/
+    }
 
     ret = nn_recv(req, recv_buf, *recv_size, 0);
     if (ret < 0)
