@@ -11,6 +11,7 @@ extern "C" {
 #define URL_TEST "ipc://example"
 
 int msg_sendto(int msg_id, char *output, char *input);
+void* msg_listen(char *url, int work_num);
 
 typedef struct test_cfg
 {
@@ -20,8 +21,8 @@ typedef struct test_cfg
 }test_cfg;
 
 enum MSG_ID{
-    MSG_CODEC_SET_CONFIG=2,
-    MSG_CODEC_GET_CONFIG=3
+    MSG_CODEC_SET_CONFIG=0,
+    MSG_CODEC_GET_CONFIG
 };
 
 //GSF_MSG_SENDTO(MSG_CODEC_SET_CONFIG, &cfg, NULL);

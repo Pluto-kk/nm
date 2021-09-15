@@ -16,14 +16,11 @@ typedef struct rep_handle
     //Number of worker threads
     int worker_num;
 
-    //Send buffer size
-    int send_buf_size;
-
     //Thread handle array
     pthread_t *pids;
 
     //User processing function
-    int (*handle)(int msg_id, char *recv_buf, int recv_size, char *send_buf, int *send_size);
+    int (*handle)(void*, void*, int*);
 } REP_HANDLE;
 
 void clean_up(void *arg)
@@ -40,15 +37,14 @@ void *rep_worker(void *arg)
     //pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
     REP_HANDLE *rep_obj = (REP_HANDLE *)arg;
-    int (*handle)(int, char *, int, char *, int *) = rep_obj->handle;
-    int send_buf_size = rep_obj->send_buf_size;
+    int (*handle)(void *, void *, int *) = rep_obj->handle;
     int fd = rep_obj->fd;
 
     for (;;)
     {
         uint32_t timer;
         void *recv_buf = NULL;
-        void *control;
+        void* control;
         struct nn_iovec iov;
         struct nn_msghdr hdr;
 
@@ -56,13 +52,6 @@ void *rep_worker(void *arg)
         hdr.msg_iovlen = 1;
         hdr.msg_control = NULL;
         hdr.msg_controllen = 0;
-
-#ifdef HAVE_MSGHDR_MSG_CONTROL
-        void* ctl_buf;
-         
-         hdr.msg_control = &ctl_buf;
-         hdr.msg_controllen = NN_MSG;
-#endif // HAVE_MSGHDR_MSG_CONTROL
 
         iov.iov_base = &recv_buf;
         iov.iov_len = NN_MSG;
@@ -82,58 +71,29 @@ void *rep_worker(void *arg)
             /*  Any error here is unexpected. */
             break;
         }
-        /*for(int i=0; i<rc; i++){
-            printf("%02x ", *(char*)(recv_buf+i));
-        }
-        printf("\n");*/
-
-        int msg_id;
-#ifdef HAVE_MSGHDR_MSG_CONTROL
-        struct nn_cmsghdr *p_cmsghdr = NN_CMSG_FIRSTHDR(&hdr);
-        while(p_cmsghdr){
-            printf("%d-%d-%d-%d\n", p_cmsghdr->cmsg_len, p_cmsghdr->cmsg_level, p_cmsghdr->cmsg_type,hdr.msg_controllen);
-            if (p_cmsghdr->cmsg_level == PROTO_SP && p_cmsghdr->cmsg_type == SP_HDR){
-                char* ptr = NN_CMSG_DATA(p_cmsghdr);
-                for(int i=0; i<256; i++){
-                    printf("%d ", *((char*)ctl_buf+i));
-                }
-                printf("msg_id>>>>>>>>>\n");
-                //break;
-            }
-            p_cmsghdr = NN_CMSG_NXTHDR (&hdr, p_cmsghdr);
-        }
-        
-        if(p_cmsghdr){
-            //printf("%d-%d-%d\n", p_cmsghdr->cmsg_len, p_cmsghdr->cmsg_level, p_cmsghdr->cmsg_type);
-            //char* ptr = NN_CMSG_DATA(p_cmsghdr);
-            //msg_id = *(int *)ptr;
-            //printf("msg_id>>>>>>>>>%s\n", ptr);
-        }
-        
-        //nn_freemsg(hdr.msg_control);
-#endif // HAVE_MSGHDR_MSG_CONTROL
 
         int send_size = 0;
-        //char *out_buf = (char *)nn_allocmsg(rep_obj->out_size, 0);
-        char *send_buf = (char *)malloc(send_buf_size);
-        memset(send_buf, 0, send_buf_size);
+        char *send_buf = NULL;
 
-        handle(msg_id, recv_buf, rc, send_buf, &send_size);
-
+        handle(recv_buf, &send_buf, &send_size);
         nn_freemsg(recv_buf);
 
-        hdr.msg_iov->iov_base = send_buf;
-        hdr.msg_iov->iov_len = send_size;
-        hdr.msg_control = NULL;
-        hdr.msg_controllen = 0;
+        //hdr.msg_iov->iov_base = send_buf;
+        //hdr.msg_iov->iov_len = send_size;
+        iov.iov_base = send_buf;
+        iov.iov_len = send_size;
+        hdr.msg_iov = NULL;
+        hdr.msg_iovlen = 0;
 
         rc = nn_sendmsg(fd, &hdr, 0);
-        if (rc < 0)
+        if (rc <= 0)
         {
             fprintf(stderr, "nn_send: %s\n", nn_strerror(nn_errno()));
             //nn_freemsg (control);
         }
-        free(send_buf);
+        printf("rc:%d %d\n", rc, nn_errno());
+        if (send_buf)
+            free(send_buf);
     }
 
     return (NULL);
@@ -142,7 +102,7 @@ void *rep_worker(void *arg)
 /*
     return:success->void* fail->NULL
  */
-void *nm_rep_listen(char *addr, int worker_num, int send_buf_size, int (*recv)(int msg_id, char *recv_buf, int recv_size, char *send_buf, int *send_size))
+void *nm_rep_listen(char *addr, int worker_num, int (*recv)(void* ctx, void* output, int* output_size))
 {
     if (worker_num > NM_REP_MAX_WORKERS || worker_num <= 0)
     {
@@ -171,7 +131,6 @@ void *nm_rep_listen(char *addr, int worker_num, int send_buf_size, int (*recv)(i
     rep_obj->pids = (pthread_t *)malloc(sizeof(pthread_t) * worker_num);
     memset(rep_obj->pids, 0, sizeof(pthread_t) * worker_num);
     rep_obj->handle = recv;
-    rep_obj->send_buf_size = send_buf_size;
 
     /*  Start up the threads. */
     for (int i = 0; i < worker_num; i++)
@@ -252,12 +211,12 @@ int nm_req_send(int req, int timeout, char *send_buf, int send_size, char *recv_
         return -1;
     }
 
-    ret = nn_setsockopt(req, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int));
+    /*ret = nn_setsockopt(req, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int));
     if (ret < 0)
     {
         fprintf(stderr, "nn_setsockopt fail: %s\n", nn_strerror(errno));
         return -1;
-    }
+    }*/
 
     ret = nn_recv(req, recv_buf, *recv_size, 0);
     if (ret < 0)
@@ -281,42 +240,36 @@ int nm_req_sendmsg(int req, int timeout, char *send_buf, int send_size, char *re
     hdr.msg_controllen = 0;
 
 #ifdef HAVE_MSGHDR_MSG_CONTROL
-    unsigned char buf[512];
-    memset(buf, 0, sizeof(buf));
-    struct nn_cmsghdr* pcmsghdr = buf;
 
-    if (pcmsghdr != NULL)
-    {
-        char* send_data = "87654321";
-        pcmsghdr->cmsg_len = NN_CMSG_SPACE(sizeof(send_data));
-        pcmsghdr->cmsg_level = PROTO_SP;
-        pcmsghdr->cmsg_type = SP_HDR;
-        
-        char*  data = NN_CMSG_DATA(pcmsghdr);
-        memcpy(data, send_data, sizeof(send_data));
-        data[sizeof(send_data)] = '\0';
-       /* char *tmp = NN_CMSG_DATA(pcmsghdr);
-        memset(tmp, '1', 255);
-        tmp[255] = '\0';*/
-    }
-
+    /* char buf[NN_CMSG_SPACE(sizeof(int))];
 
     hdr.msg_control = buf;
     hdr.msg_controllen = sizeof(buf);
 
-   pcmsghdr = NN_CMSG_FIRSTHDR(&hdr);
-    if (pcmsghdr != NULL)
-    {
-        printf("%d %d %d %s\n", pcmsghdr->cmsg_len, pcmsghdr->cmsg_level, pcmsghdr->cmsg_type, NN_CMSG_DATA(pcmsghdr));
-        /*printf("::::%p\n", pcmsghdr);
+
+    struct nn_cmsghdr* next = (struct nn_cmsghdr*)buf;
+    size_t headsz = ((char*) next) - buf;
+    next->cmsg_len = 0;
+
+    printf("headsz:%d len:%d space0:%d col_len:%d\n", headsz, NN_CMSG_SPACE (0), NN_CMSG_ALIGN_ (next->cmsg_len), hdr.msg_controllen);
+
+    
+    struct nn_cmsghdr* pcmsghdr = NN_CMSG_FIRSTHDR(&hdr);
+
+    if(pcmsghdr){ 
         pcmsghdr->cmsg_len = NN_CMSG_LEN(sizeof(int));
         pcmsghdr->cmsg_level = PROTO_SP;
-        pcmsghdr->cmsg_type = SP_HDR;
-        ((int *)NN_CMSG_DATA(pcmsghdr)) = 0;
-        char *tmp = NN_CMSG_DATA(pcmsghdr);
-        memset(tmp, '1', 255);
-        tmp[255] = '\0';*/
+        pcmsghdr->cmsg_type = SP_HDR;    
+        int* size = (int*)NN_CMSG_DATA(pcmsghdr);
+        *(size) = 10;
+       // hdr.msg_controllen = pcmsghdr->cmsg_len;
     }
+
+    pcmsghdr=NN_CMSG_FIRSTHDR(&hdr);
+    if (pcmsghdr != NULL)
+    {
+        printf("cmsg_len:%d %d\n", pcmsghdr->cmsg_len, *(size_t*)NN_CMSG_DATA(pcmsghdr));
+    }*/
 #endif // HAVE_MSGHDR_MSG_CONTROL
 
     iov.iov_base = send_buf;
@@ -347,7 +300,7 @@ int nm_req_sendmsg(int req, int timeout, char *send_buf, int send_size, char *re
     return ret;
 }
 
-int nm_req_sendto(char *addr, int timeout, char *send_buf, int send_size, char *recv_buf, int *recv_size, int msg_id)
+int nm_req_sendto(char *addr, int timeout, char *send_buf, int send_size, char *recv_buf, int *recv_size)
 {
     int req = nm_req_conn(addr);
     if (req < 0)
@@ -355,14 +308,7 @@ int nm_req_sendto(char *addr, int timeout, char *send_buf, int send_size, char *
         return -1;
     }
 
-    /*union data
-	{
-		struct nn_cmsghdr	cmsg;			//!> control msg
-		char 	ctl[NN_CMSG_SPACE(sizeof( int ))];	//!> the pointer of char
-	}ctl_un;*/
-    int ret = nm_req_sendmsg(req, timeout, send_buf, send_size, recv_buf, recv_size, NULL, 4);
-
-    //int ret = nm_req_send(req, timeout, send_buf, send_size, recv_buf, recv_size);
+    int ret = nm_req_send(req, timeout, send_buf, send_size, recv_buf, recv_size);
 
     nn_close(req);
 
